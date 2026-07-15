@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoStock — Economic Stock Market Simulator</title>
+  <meta name="description" content="An interactive educational platform that transforms microeconomic theories into visual stock market simulations. Learn supply, demand, equilibrium, and policy impacts." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #0f1629;
+      --bg-card: #111827;
+      --bg-glass: rgba(17,24,39,0.8);
+      --border: rgba(255,255,255,0.07);
+      --border-bright: rgba(99,179,237,0.3);
+      --text-primary: #f0f4ff;
+      --text-secondary: #8ba3c7;
+      --text-muted: #4a6080;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-orange: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --gradient-hero: linear-gradient(135deg, #0a0e1a 0%, #0f1629 50%, #0a1628 100%);
+      --gradient-card: linear-gradient(135deg, rgba(59,130,246,0.05), rgba(6,182,212,0.05));
+      --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+      --shadow-glow: 0 0 40px rgba(59,130,246,0.15);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+    [data-theme="light"] {
+      --bg-primary: #f0f4ff;
+      --bg-secondary: #e8eef8;
+      --bg-card: #ffffff;
+      --bg-glass: rgba(255,255,255,0.85);
+      --border: rgba(0,0,0,0.08);
+      --border-bright: rgba(59,130,246,0.3);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --gradient-hero: linear-gradient(135deg, #e8eef8 0%, #f0f4ff 50%, #e8f4ff 100%);
+      --gradient-card: linear-gradient(135deg, rgba(59,130,246,0.05), rgba(6,182,212,0.04));
+      --shadow-card: 0 4px 24px rgba(0,0,0,0.08);
+      --shadow-glow: 0 0 40px rgba(59,130,246,0.1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+      overflow-x: hidden;
+    }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--accent-blue); border-radius: 3px; }
+
+    /* ─── NAVBAR ─── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: var(--bg-glass);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: all 0.3s;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px; text-decoration: none;
+      cursor: pointer;
+    }
+    .nav-logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: white;
+    }
+    .nav-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+    .nav-subtitle { font-size: 0.65rem; color: var(--text-secondary); display: block; }
+    .nav-links { display: flex; align-items: center; gap: 0.25rem; }
+    .nav-link {
+      padding: 0.4rem 0.9rem; border-radius: 8px; border: none;
+      background: transparent; color: var(--text-secondary);
+      font-size: 0.85rem; font-weight: 500; cursor: pointer;
+      transition: all 0.2s; font-family: inherit;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: rgba(59,130,246,0.12);
+      color: var(--accent-blue);
+    }
+    .nav-actions { display: flex; align-items: center; gap: 0.75rem; }
+    .theme-btn {
+      width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text-secondary);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; transition: all 0.2s;
+    }
+    .theme-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+    .hamburger { display: none; }
+
+    /* ─── MAIN CONTENT ─── */
+    .main { padding-top: 64px; }
+    .page { display: none; animation: fadeUp 0.4s ease; }
+    .page.active { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: calc(100vh - 64px);
+      background: var(--gradient-hero);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 4rem 2rem; position: relative; overflow: hidden;
+    }
+    .hero-bg-orb {
+      position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none;
+      animation: orb-float 8s ease-in-out infinite;
+    }
+    .orb1 { width: 500px; height: 500px; background: rgba(59,130,246,0.08); top: -100px; left: -100px; }
+    .orb2 { width: 400px; height: 400px; background: rgba(6,182,212,0.07); bottom: -80px; right: -80px; animation-delay: -4s; }
+    .orb3 { width: 300px; height: 300px; background: rgba(139,92,246,0.06); top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: -2s; }
+    @keyframes orb-float {
+      0%, 100% { transform: translate(0, 0); }
+      50%       { transform: translate(20px, -20px); }
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 100px; padding: 6px 16px; font-size: 0.8rem;
+      color: var(--accent-blue); font-weight: 500; margin-bottom: 2rem;
+      animation: pulse-border 2s ease-in-out infinite;
+    }
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.2); }
+      50%       { box-shadow: 0 0 0 8px rgba(59,130,246,0); }
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 900; line-height: 1.1;
+      margin-bottom: 1.5rem; position: relative;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-cyan) 50%, var(--accent-green) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-desc {
+      font-size: 1.15rem; color: var(--text-secondary); max-width: 680px;
+      line-height: 1.8; margin-bottom: 3rem;
+    }
+    .hero-cta { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .btn-primary {
+      padding: 0.8rem 2rem; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      color: white; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: all 0.3s; font-family: inherit;
+      box-shadow: 0 4px 24px rgba(59,130,246,0.4);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(59,130,246,0.5); }
+    .btn-secondary {
+      padding: 0.8rem 2rem; border-radius: 12px;
+      border: 1px solid var(--border-bright);
+      background: transparent; color: var(--text-primary);
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: all 0.3s; font-family: inherit;
+    }
+    .btn-secondary:hover { background: rgba(59,130,246,0.08); transform: translateY(-2px); }
+
+    /* ─── STATS TICKER ─── */
+    .ticker-wrap {
+      background: var(--bg-secondary); border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border); padding: 0.5rem 0; overflow: hidden;
+      white-space: nowrap;
+    }
+    .ticker-track {
+      display: inline-flex; gap: 3rem;
+      animation: ticker-scroll 30s linear infinite;
+    }
+    .ticker-track:hover { animation-play-state: paused; }
+    @keyframes ticker-scroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .ticker-item { display: inline-flex; align-items: center; gap: 8px; font-size: 0.82rem; }
+    .ticker-symbol { font-weight: 700; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; }
+    .ticker-price { color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
+    .up { color: var(--accent-green); }
+    .down { color: var(--accent-red); }
+
+    /* ─── SECTION LAYOUT ─── */
+    .section { padding: 5rem 2rem; max-width: 1280px; margin: 0 auto; }
+    .section-header { text-align: center; margin-bottom: 3rem; }
+    .section-title { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 800; margin-bottom: 0.75rem; }
+    .section-sub { color: var(--text-secondary); font-size: 1rem; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+    .section-label {
+      display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--accent-blue); margin-bottom: 1rem;
+    }
+
+    /* ─── CARDS GRID ─── */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
+      transition: all 0.3s; position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute; inset: 0;
+      background: var(--gradient-card); opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .card:hover { border-color: var(--border-bright); transform: translateY(-4px); box-shadow: var(--shadow-glow); }
+    .card:hover::before { opacity: 1; }
+    .card-icon {
+      width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center;
+      justify-content: center; font-size: 1.4rem; margin-bottom: 1rem;
+    }
+    .card-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .card-desc { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; }
+
+    /* ─── DISCLAIMER ─── */
+    .disclaimer {
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25);
+      border-radius: var(--radius-sm); padding: 0.9rem 1.25rem;
+      display: flex; align-items: center; gap: 0.75rem;
+      font-size: 0.82rem; color: var(--accent-orange); margin-bottom: 1.5rem;
+    }
+
+    /* ─── STOCK SEARCH ─── */
+    .search-bar-wrap { position: relative; margin-bottom: 2rem; }
+    .search-bar {
+      width: 100%; padding: 1rem 1.25rem 1rem 3.25rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text-primary);
+      font-size: 1rem; font-family: inherit; outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-bar:focus { border-color: var(--accent-blue); }
+    .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem; }
+    .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+    .stock-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.25rem; cursor: pointer; transition: all 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .stock-card:hover { border-color: var(--border-bright); transform: translateY(-3px); box-shadow: var(--shadow-glow); }
+    .stock-card.selected { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+    .stock-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
+    .stock-symbol { font-size: 1.1rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .stock-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+    .stock-price { font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .stock-change { font-size: 0.8rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+    .stock-change.up { background: rgba(16,185,129,0.12); color: var(--accent-green); }
+    .stock-change.down { background: rgba(239,68,68,0.12); color: var(--accent-red); }
+    .stock-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 1rem; }
+    .stock-meta-item label { display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stock-meta-item span { font-size: 0.85rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+    .mini-chart { margin-top: 0.75rem; height: 50px; }
+    .detail-panel {
+      margin-top: 2rem; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem; display: none;
+    }
+    .detail-panel.show { display: block; }
+    .detail-chart-wrap { position: relative; height: 300px; margin-top: 1.5rem; }
+
+    /* ─── SIMULATOR ─── */
+    .sim-layout { display: grid; grid-template-columns: 340px 1fr; gap: 1.5rem; align-items: start; }
+    .slider-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; position: sticky; top: 80px; }
+    .slider-group { margin-bottom: 1.25rem; }
+    .slider-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .slider-name { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); }
+    .slider-val { font-size: 0.82rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent-blue); }
+    input[type=range] {
+      width: 100%; height: 6px; border-radius: 3px; outline: none; border: none;
+      background: linear-gradient(to right, var(--accent-blue) 0%, var(--accent-blue) var(--pct, 50%), var(--border) var(--pct, 50%), var(--border) 100%);
+      cursor: pointer; appearance: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      width: 18px; height: 18px; border-radius: 50%; background: var(--accent-blue);
+      border: 2px solid white; cursor: pointer; appearance: none;
+      box-shadow: 0 0 8px rgba(59,130,246,0.5); transition: transform 0.1s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    .sim-charts { display: flex; flex-direction: column; gap: 1.25rem; }
+    .chart-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
+    .chart-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; }
+    .chart-wrap { position: relative; }
+    .equil-display {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 0.5rem;
+    }
+    .equil-item { text-align: center; }
+    .equil-item label { display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; }
+    .equil-item .val { font-size: 1.4rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .equil-item.positive .val { color: var(--accent-green); }
+    .equil-item.negative .val { color: var(--accent-red); }
+    .equil-item.neutral .val { color: var(--accent-blue); }
+    .explain-box {
+      background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.15);
+      border-radius: var(--radius-sm); padding: 1.25rem; margin-top: 1rem;
+      font-size: 0.88rem; line-height: 1.7; color: var(--text-secondary);
+    }
+    .explain-box strong { color: var(--text-primary); }
+
+    /* ─── POLICY ─── */
+    .policy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+    .policy-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.5rem; cursor: pointer; transition: all 0.3s; text-align: left;
+      font-family: inherit;
+    }
+    .policy-card:hover { border-color: var(--border-bright); transform: translateY(-3px); box-shadow: var(--shadow-glow); }
+    .policy-card.active { border-color: var(--accent-blue); background: rgba(59,130,246,0.06); }
+    .policy-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+    .policy-name { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .policy-desc { font-size: 0.82rem; color: var(--text-secondary); }
+    .impact-panel {
+      margin-top: 2rem; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem; display: none;
+    }
+    .impact-panel.show { display: block; animation: fadeUp 0.3s ease; }
+    .impact-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 1.5rem; }
+    .impact-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .impact-table th, .impact-table td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); text-align: left; }
+    .impact-table th { color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .impact-table tr:last-child td { border-bottom: none; }
+    .impact-badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px;
+      border-radius: 6px; font-size: 0.78rem; font-weight: 600;
+    }
+    .impact-badge.up { background: rgba(16,185,129,0.12); color: var(--accent-green); }
+    .impact-badge.down { background: rgba(239,68,68,0.12); color: var(--accent-red); }
+    .impact-badge.neutral { background: rgba(99,102,241,0.12); color: #818cf8; }
+    .impact-chart-wrap { height: 220px; margin-top: 1.5rem; }
+
+    /* ─── AI EXPLAINER ─── */
+    .explainer-wrap { max-width: 860px; margin: 0 auto; }
+    .scenario-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .chip {
+      padding: 0.4rem 0.9rem; border-radius: 100px;
+      border: 1px solid var(--border); background: var(--bg-card);
+      color: var(--text-secondary); font-size: 0.8rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
+    }
+    .chip:hover, .chip.active { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(59,130,246,0.08); }
+    .explainer-input-wrap { position: relative; margin-bottom: 1rem; }
+    .explainer-input {
+      width: 100%; padding: 1rem 7rem 1rem 1.25rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text-primary);
+      font-size: 0.95rem; font-family: inherit; outline: none; resize: vertical; min-height: 80px;
+    }
+    .explainer-input:focus { border-color: var(--accent-blue); }
+    .btn-explain {
+      position: absolute; right: 0.75rem; bottom: 0.75rem;
+      padding: 0.5rem 1.25rem; border-radius: 8px; border: none;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      color: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+    .explanation-output {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.75rem; min-height: 180px;
+      display: none;
+    }
+    .explanation-output.show { display: block; animation: fadeUp 0.4s ease; }
+    .explanation-output h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--accent-blue); }
+    .explanation-output p { color: var(--text-secondary); font-size: 0.92rem; line-height: 1.8; margin-bottom: 0.75rem; }
+    .explanation-output .formula {
+      background: rgba(59,130,246,0.06); border-left: 3px solid var(--accent-blue);
+      border-radius: 0 8px 8px 0; padding: 0.75rem 1rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--accent-cyan);
+      margin: 0.75rem 0;
+    }
+
+    /* ─── LEARNING ─── */
+    .theory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+    .theory-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; transition: all 0.3s;
+    }
+    .theory-card:hover { border-color: var(--border-bright); transform: translateY(-3px); }
+    .theory-header {
+      padding: 1.25rem 1.5rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .theory-header-left { display: flex; align-items: center; gap: 0.75rem; }
+    .theory-tag { font-size: 0.7rem; font-weight: 700; padding: 2px 10px; border-radius: 100px; }
+    .theory-body { padding: 0 1.5rem 1.5rem; display: none; border-top: 1px solid var(--border); }
+    .theory-body.open { display: block; animation: fadeUp 0.3s ease; }
+    .theory-def { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.7; margin-bottom: 1rem; padding-top: 1rem; }
+    .theory-formula {
+      background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.12);
+      border-radius: var(--radius-sm); padding: 0.75rem 1rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+      color: var(--accent-cyan); margin-bottom: 1rem;
+    }
+    .theory-example { font-size: 0.82rem; color: var(--text-muted); font-style: italic; border-left: 2px solid var(--accent-green); padding-left: 0.75rem; }
+    .mini-chart-wrap { height: 100px; margin: 1rem 0; }
+    .chevron { transition: transform 0.25s; font-size: 0.8rem; color: var(--text-muted); }
+    .chevron.open { transform: rotate(180deg); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--bg-secondary); border-top: 1px solid var(--border);
+      padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.82rem;
+    }
+    footer a { color: var(--accent-blue); text-decoration: none; }
+
+    /* ─── RISK METER ─── */
+    .risk-meter-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+    .risk-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      .sim-layout { grid-template-columns: 1fr; }
+      .slider-panel { position: static; }
+      .nav-links { display: none; }
+      .hamburger { display: block; }
+      .mobile-nav {
+        position: fixed; top: 64px; left: 0; right: 0; z-index: 999;
+        background: var(--bg-glass); backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border); padding: 1rem;
+        display: flex; flex-direction: column; gap: 0.25rem;
+      }
+      .mobile-nav .nav-link { text-align: left; padding: 0.6rem 1rem; }
+    }
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 2rem; }
+      .equil-display { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ─── ANIMATED NUMBER ─── */
+    .anim-num { display: inline-block; transition: all 0.4s; }
+
+    /* ─── LOADING SPINNER ─── */
+    .spinner {
+      width: 24px; height: 24px; border: 3px solid var(--border);
+      border-top-color: var(--accent-blue); border-radius: 50%;
+      animation: spin 0.8s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── PROGRESS BAR ─── */
+    .progress-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; margin-top: 0.4rem; }
+    .progress-fill { height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(.34,1.56,.64,1); }
+
+    /* ─── GLOW DOTS ─── */
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot.green { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+    .dot.red   { background: var(--accent-red);   box-shadow: 0 0 8px var(--accent-red); }
+    .dot.blue  { background: var(--accent-blue);  box-shadow: 0 0 8px var(--accent-blue); }
+    .dot.pulse { animation: dot-pulse 1.5s ease-in-out infinite; }
+    @keyframes dot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="nav-brand" onclick="navigate('home')">
+    <div class="nav-logo">📈</div>
+    <div>
+      <span class="nav-title">EcoStock</span>
+      <span class="nav-subtitle">Economic Simulator</span>
+    </div>
+  </div>
+  <div class="nav-links" id="navLinks">
+    <button class="nav-link active" onclick="navigate('home')" id="nav-home">Home</button>
+    <button class="nav-link" onclick="navigate('stocks')" id="nav-stocks">Stock Search</button>
+    <button class="nav-link" onclick="navigate('simulator')" id="nav-simulator">Simulator</button>
+    <button class="nav-link" onclick="navigate('policy')" id="nav-policy">Policy Analysis</button>
+    <button class="nav-link" onclick="navigate('explainer')" id="nav-explainer">AI Explainer</button>
+    <button class="nav-link" onclick="navigate('learning')" id="nav-learning">Learning</button>
+  </div>
+  <div class="nav-actions">
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+    <button class="hamburger theme-btn" onclick="toggleMobileNav()">☰</button>
+  </div>
+</nav>
+<div class="mobile-nav" id="mobileNav" style="display:none">
+  <button class="nav-link" onclick="navigate('home');toggleMobileNav()">🏠 Home</button>
+  <button class="nav-link" onclick="navigate('stocks');toggleMobileNav()">📊 Stock Search</button>
+  <button class="nav-link" onclick="navigate('simulator');toggleMobileNav()">⚙️ Simulator</button>
+  <button class="nav-link" onclick="navigate('policy');toggleMobileNav()">📋 Policy Analysis</button>
+  <button class="nav-link" onclick="navigate('explainer');toggleMobileNav()">🤖 AI Explainer</button>
+  <button class="nav-link" onclick="navigate('learning');toggleMobileNav()">📚 Learning</button>
+</div>
+
+<main class="main">
+
+<!-- ═══════════════════════════════════════════════════════ HOME PAGE -->
+<div class="page active" id="page-home">
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-bg-orb orb1"></div>
+    <div class="hero-bg-orb orb2"></div>
+    <div class="hero-bg-orb orb3"></div>
+    <div class="hero-badge"><span class="dot green pulse"></span> Educational Economic Simulator</div>
+    <h1>Where <span class="gradient-text">Economics</span><br>Meets the Market</h1>
+    <p class="hero-desc">
+      Transform static microeconomic formulas into interactive simulations. Explore how supply, demand, interest rates, and policy decisions shape stock market behavior — visually and dynamically.
+    </p>
+    <div class="hero-cta">
+      <button class="btn-primary" onclick="navigate('simulator')">🚀 Launch Simulator</button>
+      <button class="btn-secondary" onclick="navigate('learning')">📚 Learn Economics</button>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker-wrap">
+    <div class="ticker-track" id="ticker"></div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Platform Features</span>
+      <h2 class="section-title">Everything You Need to <span class="gradient-text">Understand Markets</span></h2>
+      <p class="section-sub">Six powerful tools that bring microeconomic theory to life through interactive visualizations.</p>
+    </div>
+    <div class="cards-grid">
+      <div class="card" onclick="navigate('stocks')" style="cursor:pointer">
+        <div class="card-icon" style="background:rgba(59,130,246,0.12)">📊</div>
+        <div class="card-title">Stock Search</div>
+        <div class="card-desc">Search VN & US stocks with real-time simulated price charts, volume data, and market cap analysis.</div>
+      </div>
+      <div class="card" onclick="navigate('simulator')" style="cursor:pointer">
+        <div class="card-icon" style="background:rgba(16,185,129,0.12)">⚙️</div>
+        <div class="card-title">Economic Simulator</div>
+        <div class="card-desc">Adjust 8 economic variables and watch supply/demand curves and equilibrium price move in real time.</div>
+      </div>
+      <div class="card" onclick="navigate('policy')" style="cursor:pointer">
+        <div class="card-icon" style="background:rgba(139,92,246,0.12)">📋</div>
+        <div class="card-title">Policy Analysis</div>
+        <div class="card-desc">Simulate central bank and government policy scenarios and trace their cascading market effects.</div>
+      </div>
+      <div class="card" onclick="navigate('explainer')" style="cursor:pointer">
+        <div class="card-icon" style="background:rgba(245,158,11,0.12)">🤖</div>
+        <div class="card-title">AI Explainer</div>
+        <div class="card-desc">Get detailed educational explanations linking any economic scenario to stock market theory.</div>
+      </div>
+      <div class="card" onclick="navigate('learning')" style="cursor:pointer">
+        <div class="card-icon" style="background:rgba(6,182,212,0.12)">📚</div>
+        <div class="card-title">Learning Section</div>
+        <div class="card-desc">Master 8 core microeconomic theories with formulas, interactive charts, and real stock market examples.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(239,68,68,0.12)">⚠️</div>
+        <div class="card-title">Educational Purpose</div>
+        <div class="card-desc">This platform is designed strictly for learning. No buy/sell/hold recommendations are ever generated.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE STATS -->
+  <div class="section" style="padding-top:0">
+    <div class="section-header">
+      <span class="section-label">Live Market Overview</span>
+      <h2 class="section-title">Simulated <span class="gradient-text">Market Data</span></h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem;" id="statsGrid"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ STOCK SEARCH PAGE -->
+<div class="page" id="page-stocks">
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Market Data</span>
+      <h2 class="section-title">Stock <span class="gradient-text">Search</span></h2>
+      <p class="section-sub">Explore simulated stock data for Vietnamese and US markets. Click any card to view the full price chart.</p>
+    </div>
+    <div class="disclaimer">
+      ⚠️ <strong>Educational Simulation:</strong> All prices are simulated for learning purposes. This is not financial advice.
+    </div>
+    <div class="search-bar-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-bar" id="stockSearch" placeholder="Search by symbol or company name…" oninput="filterStocks()" />
+    </div>
+    <div class="stock-grid" id="stockGrid"></div>
+    <div class="detail-panel" id="detailPanel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
+        <div>
+          <h2 id="detailTitle" style="font-size:1.5rem;font-weight:800"></h2>
+          <div id="detailMeta" style="color:var(--text-secondary);font-size:0.9rem;margin-top:0.25rem"></div>
+        </div>
+        <div style="text-align:right">
+          <div id="detailPrice" style="font-size:2rem;font-weight:800;font-family:'JetBrains Mono',monospace"></div>
+          <div id="detailChange"></div>
+        </div>
+      </div>
+      <div class="detail-chart-wrap"><canvas id="detailChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SIMULATOR PAGE -->
+<div class="page" id="page-simulator">
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Interactive Simulation</span>
+      <h2 class="section-title">Economic Theory <span class="gradient-text">Simulator</span></h2>
+      <p class="section-sub">Adjust economic variables using the sliders and watch the supply/demand curves update in real time.</p>
+    </div>
+    <div class="disclaimer">
+      ⚠️ <strong>Educational Simulation Only:</strong> This demonstrates microeconomic theory. Not financial advice.
+    </div>
+    <div class="sim-layout">
+      <!-- SLIDER PANEL -->
+      <div class="slider-panel">
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:1.25rem;display:flex;align-items:center;gap:0.5rem">
+          ⚙️ Economic Variables
+        </div>
+        <div id="sliders"></div>
+        <button onclick="resetSimulator()" style="width:100%;margin-top:0.5rem;padding:0.65rem;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:inherit;font-size:0.85rem;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent-blue)'" onmouseout="this.style.borderColor='var(--border)'">↺ Reset to Default</button>
+      </div>
+      <!-- CHARTS -->
+      <div class="sim-charts">
+        <!-- Equilibrium -->
+        <div class="chart-card">
+          <div class="chart-title">📍 Market Equilibrium</div>
+          <div class="equil-display" id="equilDisplay"></div>
+        </div>
+        <!-- S&D Chart -->
+        <div class="chart-card">
+          <div class="chart-title">📈 Supply & Demand Curves</div>
+          <div class="chart-wrap" style="height:320px"><canvas id="sdChart"></canvas></div>
+        </div>
+        <!-- Price Trend -->
+        <div class="chart-card">
+          <div class="chart-title">💹 Expected Price Trend</div>
+          <div class="chart-wrap" style="height:220px"><canvas id="trendChart"></canvas></div>
+        </div>
+        <!-- Risk Meter -->
+        <div class="chart-card">
+          <div class="chart-title">🎯 Market Risk Meter</div>
+          <div class="chart-wrap" style="height:220px"><canvas id="riskChart"></canvas></div>
+        </div>
+        <!-- Market Explanation -->
+        <div class="chart-card">
+          <div class="chart-title">💡 Market Explanation</div>
+          <div class="explain-box" id="simExplain"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ POLICY PAGE -->
+<div class="page" id="page-policy">
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Macro Policy</span>
+      <h2 class="section-title">Policy Impact <span class="gradient-text">Analysis</span></h2>
+      <p class="section-sub">Select a macroeconomic policy scenario to see its cascading effects on markets through the lens of microeconomic theory.</p>
+    </div>
+    <div class="disclaimer">
+      ⚠️ <strong>Educational Simulation Only:</strong> Simplified models for learning purposes. Not financial advice.
+    </div>
+    <div class="policy-grid" id="policyGrid"></div>
+    <div class="impact-panel" id="impactPanel">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
+        <div id="policyPanelIcon" style="font-size:2.5rem"></div>
+        <div>
+          <h3 class="impact-title" id="policyPanelTitle" style="margin-bottom:0.25rem"></h3>
+          <p id="policyPanelDesc" style="color:var(--text-secondary);font-size:0.88rem"></p>
+        </div>
+      </div>
+      <table class="impact-table">
+        <thead><tr>
+          <th>Dimension</th><th>Direction</th><th>Explanation</th>
+        </tr></thead>
+        <tbody id="impactTable"></tbody>
+      </table>
+      <div class="impact-chart-wrap"><canvas id="policyChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ AI EXPLAINER PAGE -->
+<div class="page" id="page-explainer">
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">AI-Powered Education</span>
+      <h2 class="section-title">Economic <span class="gradient-text">Explainer</span></h2>
+      <p class="section-sub">Describe an economic scenario and receive a detailed educational explanation grounded in microeconomic theory.</p>
+    </div>
+    <div class="disclaimer">
+      ⚠️ <strong>This is an educational economic simulation, not financial advice.</strong> No buy, sell, or hold recommendations are generated.
+    </div>
+    <div class="explainer-wrap">
+      <div style="font-size:0.82rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.75rem">Quick Scenarios</div>
+      <div class="scenario-chips" id="scenarioChips"></div>
+      <div class="explainer-input-wrap">
+        <textarea class="explainer-input" id="explainerInput" placeholder="e.g. 'What happens to stock prices when the central bank raises interest rates?' or 'Explain the effect of inflation on consumer demand…'"></textarea>
+        <button class="btn-explain" onclick="generateExplanation()">✨ Explain</button>
+      </div>
+      <div class="explanation-output" id="explanationOutput"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ LEARNING PAGE -->
+<div class="page" id="page-learning">
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Microeconomic Theory</span>
+      <h2 class="section-title">Learning <span class="gradient-text">Center</span></h2>
+      <p class="section-sub">Master the 8 core microeconomic theories with interactive charts and real stock market examples.</p>
+    </div>
+    <div class="theory-grid" id="theoryGrid"></div>
+  </div>
+</div>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <p>EcoStock — Economic Stock Market Simulator &nbsp;|&nbsp; For educational purposes only</p>
+  <p style="margin-top:0.4rem">⚠️ This application demonstrates microeconomic theory and does <strong>not</strong> constitute financial advice. &nbsp;|&nbsp; No real market data is used.</p>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════════════════
+const STOCKS = [
+  { symbol:'FPT',  name:'FPT Corporation',          price:105.2, change:1.8,  volume:'12.4M', mcap:'152T VND', market:'HOSE', sector:'Technology',  base:100 },
+  { symbol:'VNM',  name:'Vinamilk',                 price:74.5,  change:-0.6, volume:'8.2M',  mcap:'164T VND', market:'HOSE', sector:'Consumer',     base:76  },
+  { symbol:'VIC',  name:'Vingroup',                 price:48.3,  change:0.4,  volume:'15.1M', mcap:'168T VND', market:'HOSE', sector:'Real Estate',  base:47  },
+  { symbol:'HPG',  name:'Hoa Phat Group',           price:22.8,  change:-1.2, volume:'32.5M', mcap:'125T VND', market:'HOSE', sector:'Steel',        base:24  },
+  { symbol:'AAPL', name:'Apple Inc.',               price:214.3, change:2.1,  volume:'58.6M', mcap:'$3.28T',   market:'NASDAQ', sector:'Technology', base:210 },
+  { symbol:'TSLA', name:'Tesla Inc.',               price:187.6, change:-3.4, volume:'112.3M',mcap:'$598B',    market:'NASDAQ', sector:'Automotive', base:195 },
+  { symbol:'NVDA', name:'NVIDIA Corporation',       price:875.4, change:5.7,  volume:'43.2M', mcap:'$2.15T',   market:'NASDAQ', sector:'Semiconductors',base:840},
+];
+
+const SLIDER_CONFIG = [
+  { id:'supply',    label:'Supply Level',         min:0, max:100, def:50, unit:'',  desc:'Higher supply increases quantity available at each price' },
+  { id:'demand',    label:'Demand Level',         min:0, max:100, def:50, unit:'',  desc:'Higher demand drives prices upward' },
+  { id:'interest',  label:'Interest Rate',        min:0, max:20,  def:5,  unit:'%', desc:'Central bank policy rate affecting borrowing costs' },
+  { id:'inflation', label:'Inflation Rate',       min:0, max:25,  def:3,  unit:'%', desc:'General price level increase in the economy' },
+  { id:'tax',       label:'Corporate Tax Rate',   min:0, max:50,  def:20, unit:'%', desc:'Tax burden on corporate profits' },
+  { id:'prodcost',  label:'Production Cost',      min:0, max:100, def:30, unit:'',  desc:'Factor input costs for producers' },
+  { id:'confidence',label:'Consumer Confidence',  min:0, max:100, def:60, unit:'',  desc:'Consumer willingness to spend' },
+  { id:'sentiment', label:'Investor Sentiment',   min:0, max:100, def:55, unit:'',  desc:'Market optimism / risk appetite' },
+];
+
+const POLICIES = [
+  {
+    id:'rate-up', icon:'📈', name:'Interest Rate Increase', desc:'Central bank raises the policy rate',
+    narrative:'The central bank raises interest rates to combat inflation, increasing the cost of borrowing across the economy.',
+    impacts:[
+      { dim:'Investors',       dir:'down',    exp:'Higher bond yields attract capital away from equities, reducing stock demand.' },
+      { dim:'Firms',           dir:'down',    exp:'Higher borrowing costs compress profit margins and reduce capital investment plans.' },
+      { dim:'Stock Demand',    dir:'down',    exp:'Risk-free alternatives become more attractive, decreasing equity demand.' },
+      { dim:'Stock Supply',    dir:'neutral', exp:'Share supply remains relatively stable; issuance may slow due to higher cost of equity.' },
+      { dim:'Equilibrium Price', dir:'down',  exp:'Reduced demand shifts the demand curve leftward, driving equilibrium price lower.' },
+    ],
+    chartData:[-5, -8, -12, -10, -7, -9, -11]
+  },
+  {
+    id:'rate-down', icon:'📉', name:'Interest Rate Decrease', desc:'Central bank cuts the policy rate',
+    narrative:'Rate cuts stimulate economic activity by reducing borrowing costs, encouraging investment and spending.',
+    impacts:[
+      { dim:'Investors',       dir:'up',      exp:'Lower bond yields push investors toward equities seeking higher returns.' },
+      { dim:'Firms',           dir:'up',      exp:'Cheaper credit enables expansion; profit margins improve with lower financing costs.' },
+      { dim:'Stock Demand',    dir:'up',      exp:'Equities become relatively more attractive vs. fixed income.' },
+      { dim:'Stock Supply',    dir:'neutral', exp:'Companies may issue more shares to fund expansion at lower cost.' },
+      { dim:'Equilibrium Price', dir:'up',    exp:'Increased demand shifts the demand curve rightward, raising equilibrium price.' },
+    ],
+    chartData:[3, 6, 9, 8, 11, 10, 13]
+  },
+  {
+    id:'tax-up', icon:'💼', name:'Corporate Tax Increase', desc:'Government raises corporate income tax',
+    narrative:'An increase in corporate tax reduces after-tax profits, affecting firm valuation and investor returns.',
+    impacts:[
+      { dim:'Investors',       dir:'down',    exp:'Lower after-tax earnings reduce dividend expectations and EPS, depressing valuations.' },
+      { dim:'Firms',           dir:'down',    exp:'Reduced retained earnings limit reinvestment capacity and lower return on equity.' },
+      { dim:'Stock Demand',    dir:'down',    exp:'Expected lower returns reduce investor appetite for equities.' },
+      { dim:'Stock Supply',    dir:'neutral', exp:'Share supply unchanged in the short run; firms may delay new issuance.' },
+      { dim:'Equilibrium Price', dir:'down',  exp:'Lower expected cash flows reduce present value of stocks; price falls.' },
+    ],
+    chartData:[-2, -4, -6, -7, -5, -8, -6]
+  },
+  {
+    id:'inflation', icon:'💸', name:'Inflation Surge', desc:'Rapid increase in the general price level',
+    narrative:'High inflation erodes purchasing power, raises input costs, and creates uncertainty in financial markets.',
+    impacts:[
+      { dim:'Investors',       dir:'down',    exp:'Real returns on fixed income fall; equities may offer partial inflation hedge but with higher uncertainty.' },
+      { dim:'Firms',           dir:'down',    exp:'Input costs rise faster than output prices in many sectors, compressing margins.' },
+      { dim:'Stock Demand',    dir:'neutral', exp:'Mixed: some sectors benefit (commodities, real estate) while others suffer.' },
+      { dim:'Stock Supply',    dir:'up',      exp:'Firms may accelerate share issuance to raise capital before costs rise further.' },
+      { dim:'Equilibrium Price', dir:'neutral',exp:'Sector-dependent; nominal prices may rise but real prices often fall.' },
+    ],
+    chartData:[1, -2, -4, -3, 2, -1, -3]
+  },
+  {
+    id:'gdp', icon:'🌱', name:'GDP Growth', desc:'Positive GDP growth acceleration',
+    narrative:'Strong economic growth boosts corporate earnings, employment, and consumer confidence across the economy.',
+    impacts:[
+      { dim:'Investors',       dir:'up',      exp:'Stronger growth expectations raise earnings forecasts, increasing willingness to pay for equities.' },
+      { dim:'Firms',           dir:'up',      exp:'Expanding revenue and higher capacity utilization improve profitability.' },
+      { dim:'Stock Demand',    dir:'up',      exp:'Broad risk appetite increases; demand for equities rises significantly.' },
+      { dim:'Stock Supply',    dir:'neutral', exp:'Firms may issue equity to fund expansion; supply gradually increases.' },
+      { dim:'Equilibrium Price', dir:'up',    exp:'Demand curve shifts right; higher equilibrium price as market is bullish.' },
+    ],
+    chartData:[4, 7, 10, 12, 11, 14, 16]
+  },
+  {
+    id:'fx', icon:'💱', name:'Exchange Rate Depreciation', desc:'Domestic currency weakens vs. USD',
+    narrative:'Currency depreciation affects export competitiveness, import costs, and foreign investor returns.',
+    impacts:[
+      { dim:'Investors',       dir:'neutral', exp:'Foreign investors face currency losses; domestic investors in export sectors may benefit.' },
+      { dim:'Firms',           dir:'neutral', exp:'Exporters gain competitive advantage while importers face higher input costs.' },
+      { dim:'Stock Demand',    dir:'neutral', exp:'Mixed sector impacts; overall market direction depends on economy structure.' },
+      { dim:'Stock Supply',    dir:'neutral', exp:'Foreign capital outflows may reduce demand for new share issuance.' },
+      { dim:'Equilibrium Price', dir:'down',  exp:'Capital outflows create selling pressure, tending to lower equilibrium prices.' },
+    ],
+    chartData:[-1, -3, -2, -4, -3, -5, -4]
+  },
+];
+
+const THEORIES = [
+  {
+    name:'Law of Demand', tag:'Demand', color:'#3b82f6',
+    def:'As the price of a good increases, the quantity demanded decreases, ceteris paribus. Consumers substitute cheaper alternatives when prices rise.',
+    formula:'Qd = a - b·P    where b > 0 (slope of demand curve)',
+    example:'When FPT stock price rises from 100 to 120, some investors switch to VNM or other equities, reducing quantity demanded of FPT.',
+    chartType:'demand'
+  },
+  {
+    name:'Law of Supply', tag:'Supply', color:'#10b981',
+    def:'As the price of a good increases, the quantity supplied increases, ceteris paribus. Higher prices incentivize producers to supply more.',
+    formula:'Qs = c + d·P    where d > 0 (slope of supply curve)',
+    example:'When NVDA stock price surges, insiders and early investors are incentivized to sell more shares, increasing market supply.',
+    chartType:'supply'
+  },
+  {
+    name:'Market Equilibrium', tag:'Equilibrium', color:'#8b5cf6',
+    def:'The price at which quantity demanded equals quantity supplied. At equilibrium, the market clears with no surplus or shortage.',
+    formula:'Qd = Qs  →  P* = (a - c) / (b + d)',
+    example:'The equilibrium price of TSLA represents the price where the exact number of buyers matches the number of sellers willing to transact.',
+    chartType:'equilibrium'
+  },
+  {
+    name:'Price Elasticity', tag:'Elasticity', color:'#f59e0b',
+    def:'Measures how sensitive quantity demanded is to a price change. Elastic demand (>1) means quantity changes more than price; inelastic (<1) means less sensitive.',
+    formula:'PED = (% ΔQd) / (% ΔP)    |PED| > 1 elastic, |PED| < 1 inelastic',
+    example:'Blue-chip stocks like AAPL tend to have inelastic demand as institutional investors hold regardless of moderate price swings.',
+    chartType:'elasticity'
+  },
+  {
+    name:'Consumer Surplus', tag:'Welfare', color:'#06b6d4',
+    def:'The benefit consumers receive when they pay less than their maximum willingness to pay. Represented as the area above the price line and below the demand curve.',
+    formula:'CS = ½ · (Pmax - P*) · Q*',
+    example:'An investor willing to pay $900 for NVDA but buying at $875 enjoys a consumer surplus of $25 per share.',
+    chartType:'cs'
+  },
+  {
+    name:'Producer Surplus', tag:'Welfare', color:'#10b981',
+    def:'The benefit producers receive when they sell at a price above their minimum acceptable price. Area above the supply curve and below the market price.',
+    formula:'PS = ½ · (P* - Pmin) · Q*',
+    example:'A company that issues shares at $50 when the market price is $60 captures $10/share of producer surplus.',
+    chartType:'ps'
+  },
+  {
+    name:'Deadweight Loss', tag:'Efficiency', color:'#ef4444',
+    def:'The loss of economic efficiency when equilibrium is not achieved. Occurs due to taxes, price controls, or market distortions that prevent mutually beneficial transactions.',
+    formula:'DWL = ½ · |P1 - P0| · |Q1 - Q0|',
+    example:'A financial transaction tax creates deadweight loss by preventing some beneficial stock trades from occurring at the new higher effective price.',
+    chartType:'dwl'
+  },
+  {
+    name:'Opportunity Cost', tag:'Decision', color:'#f97316',
+    def:'The value of the next best alternative forgone when making a decision. Every choice has an implicit cost equal to the best alternative not chosen.',
+    formula:'OC = Value of next-best alternative (explicit + implicit)',
+    example:'Holding cash instead of AAPL stock has an opportunity cost equal to the return AAPL would have generated during that period.',
+    chartType:'oc'
+  },
+];
+
+const SCENARIOS = [
+  'What happens to stock prices when interest rates rise?',
+  'How does inflation affect stock market demand?',
+  'Explain how GDP growth impacts equity valuations',
+  'What is the effect of corporate tax on stock supply?',
+  'How do consumer confidence changes move stock prices?',
+  'Explain market equilibrium in stock markets',
+];
+
+const EXPLAINER_KB = {
+  'interest rate': {
+    title:'Interest Rate & Stock Markets',
+    paragraphs:[
+      'When the central bank raises interest rates, the cost of borrowing increases throughout the economy. This has a direct and indirect impact on stock market valuations through the <strong>discount rate effect</strong>.',
+      'According to the <strong>Law of Demand</strong>, as the opportunity cost of holding stocks rises (because risk-free savings now offer higher yields), the demand for equities decreases. This leftward shift in the demand curve lowers the equilibrium price.',
+      'For firms, higher interest rates increase the weighted average cost of capital (WACC), reducing the present value of future cash flows in Discounted Cash Flow (DCF) models. This mechanically lowers fair value estimates.',
+    ],
+    formula:'Stock Value = Σ [CFt / (1 + r)^t]   where r increases → value decreases',
+    example:'If the Fed raises rates from 3% to 5%, a stock previously valued at 100 using a 3% discount rate may be revalued down to ~85 with the new 5% rate — purely from the rate change, before any earnings impact.'
+  },
+  'inflation': {
+    title:'Inflation & Stock Market Dynamics',
+    paragraphs:[
+      'Inflation affects stock markets through multiple channels. High inflation erodes <strong>real purchasing power</strong>, increases input costs for firms, and often leads to central bank rate hikes — which further depress stock valuations.',
+      'From a supply-demand perspective, inflation uncertainty increases risk premiums demanded by investors. This shifts the demand curve leftward, as investors require lower prices (higher expected returns) to compensate for inflation risk.',
+      'Some sectors exhibit <strong>price inelastic demand</strong> — companies that can pass costs to consumers (like utilities and consumer staples) may maintain earnings, while those facing elastic demand curves suffer margin compression.',
+    ],
+    formula:'Real Return = Nominal Return - Inflation Rate   (Fisher Equation)',
+    example:'If VNM generates a 10% nominal return but inflation is 8%, the real return is only 2% — potentially lower than inflation-protected instruments, reducing demand for VNM shares.'
+  },
+  'gdp': {
+    title:'GDP Growth & Equity Market Theory',
+    paragraphs:[
+      'Strong GDP growth signals expanding economic activity: higher employment, consumer spending, and corporate revenues. This creates a virtuous cycle that shifts the <strong>demand curve for stocks rightward</strong>.',
+      'According to market equilibrium theory, when demand increases while supply remains constant, the equilibrium price rises. Investors price in higher future earnings, pushing valuations upward through P/E expansion.',
+      'GDP growth also improves <strong>consumer confidence</strong> — a key demand-side driver. Higher confidence leads to more discretionary spending, benefiting sectors like technology, retail, and consumer discretionary.',
+    ],
+    formula:'P* ↑ when Demand Curve shifts Right   (GDP growth → higher Q* and P*)',
+    example:'Vietnam\'s GDP growth above 7% in recent years has been a key driver of FPT and VIC stock appreciation as domestic consumption and corporate profits expand.'
+  },
+  'corporate tax': {
+    title:'Corporate Tax & Stock Valuations',
+    paragraphs:[
+      'An increase in corporate tax directly reduces after-tax profits, the denominator of earnings-based valuation metrics like P/E ratios. This mechanically reduces the intrinsic value of equities.',
+      'From the <strong>supply side of stocks</strong>, lower retained earnings reduce firms\' capacity for share buybacks — a major source of price support. Simultaneously, lower earnings per share reduce investor willingness to pay current prices.',
+      'The demand for stocks shifts leftward as expected returns decrease. At the new lower equilibrium price, the market clears with fewer willing buyers at the original price level.',
+    ],
+    formula:'EPS_after = EPS_before × (1 - tax_rate)   Higher tax → lower EPS → lower P*',
+    example:'If AAPL faces a tax increase from 15% to 25%, its after-tax earnings fall ~12%, reducing fair value and potentially shifting the equilibrium price downward by a similar magnitude.'
+  },
+  'consumer confidence': {
+    title:'Consumer Confidence & Stock Demand',
+    paragraphs:[
+      'Consumer confidence is a leading indicator that directly shapes both consumption and investment decisions. High confidence shifts the <strong>aggregate demand curve rightward</strong> in both goods markets and financial markets.',
+      'In stock markets, confident investors have a lower risk premium requirement, meaning they are willing to accept lower expected returns — equivalent to paying higher prices for the same future cash flows.',
+      'The <strong>multiplier effect</strong> of confidence means that even moderate confidence improvements can lead to disproportionate increases in stock demand, especially in consumer-facing sectors.',
+    ],
+    formula:'Risk Premium ↓ when confidence ↑   → Discount Rate falls → Stock Price rises',
+    example:'During the post-COVID recovery, surging consumer confidence drove HPG and FPT to multi-year highs as investors anticipated stronger earnings from a recovering economy.'
+  },
+  'market equilibrium': {
+    title:'Market Equilibrium in Stock Markets',
+    paragraphs:[
+      'Stock market equilibrium occurs at the price P* where the number of shares sellers are willing to sell exactly equals the number of shares buyers wish to purchase — at that exact price and time.',
+      'Unlike simple goods markets, stock market equilibrium is dynamic and changes continuously as new information arrives. Each earnings report, macro data release, or policy announcement shifts supply or demand curves, establishing a new equilibrium.',
+      'The <strong>Law of One Price</strong> ensures that arbitrage quickly eliminates price discrepancies, driving markets toward equilibrium. When prices deviate from fundamental value, rational investors bring them back through buying or selling pressure.',
+    ],
+    formula:'Qd(P*) = Qs(P*)   At equilibrium: excess demand = 0, excess supply = 0',
+    example:'When NVDA reports better-than-expected earnings, the demand curve shifts right. The old price becomes below equilibrium, creating excess demand. Buyers bid the price up until a new higher equilibrium is reached.'
+  },
+  'default': {
+    title:'Microeconomic Principles in Stock Markets',
+    paragraphs:[
+      'Stock markets are dynamic systems where microeconomic principles govern price discovery. At their core, markets aggregate the supply of shares (from sellers) and demand for shares (from buyers) to reach an equilibrium price.',
+      'The <strong>Law of Supply and Demand</strong> dictates that when demand exceeds supply at a given price, prices rise until a new equilibrium is reached. Conversely, excess supply drives prices down.',
+      'External variables — interest rates, inflation, GDP growth, and policy changes — act as <strong>demand and supply shifters</strong>, moving entire curves rather than just points along them, and establishing new equilibrium prices.',
+    ],
+    formula:'P* = f(Supply, Demand, Interest Rates, Inflation, GDP, Sentiment)',
+    example:'A comprehensive understanding of microeconomic theory allows investors to anticipate directional price movements when key economic variables change, as each change systematically shifts supply or demand curves.'
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════════════════════════════
+let isDark = true;
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+  if (sdChartInstance) sdChartInstance.destroy(), buildSDChart();
+  if (trendChartInstance) trendChartInstance.destroy(), buildTrendChart();
+  if (riskChartInstance) riskChartInstance.destroy(), buildRiskChart();
+  rebuildTheoryCharts();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════════════
+let currentPage = 'home';
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+  currentPage = page;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (page === 'simulator' && !sdChartInstance) initSimulator();
+  if (page === 'stocks') initStocks();
+  if (page === 'learning') initLearning();
+  if (page === 'policy') initPolicy();
+  if (page === 'explainer') initExplainer();
+  if (page === 'home') initHome();
+}
+
+function toggleMobileNav() {
+  const mn = document.getElementById('mobileNav');
+  mn.style.display = mn.style.display === 'none' ? 'flex' : 'none';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// RANDOM WALK GENERATOR
+// ══════════════════════════════════════════════════════════════════════
+function randomWalk(base, steps, volatility = 0.015) {
+  const prices = [base];
+  for (let i = 1; i < steps; i++) {
+    const change = prices[i-1] * volatility * (Math.random() * 2 - 1);
+    prices.push(Math.max(prices[i-1] + change, base * 0.5));
+  }
+  return prices;
+}
+
+function formatPrice(p) { return p >= 100 ? p.toFixed(2) : p.toFixed(3); }
+function formatNum(n) {
+  if (n >= 1e12) return (n/1e12).toFixed(2) + 'T';
+  if (n >= 1e9)  return (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6)  return (n/1e6).toFixed(2) + 'M';
+  return n.toFixed(0);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// HOME PAGE
+// ══════════════════════════════════════════════════════════════════════
+let tickerInterval = null;
+let tickerPrices = {};
+
+function initHome() {
+  STOCKS.forEach(s => { if (!tickerPrices[s.symbol]) tickerPrices[s.symbol] = s.price; });
+  buildTicker();
+  buildStatsGrid();
+  if (!tickerInterval) {
+    tickerInterval = setInterval(() => {
+      STOCKS.forEach(s => {
+        tickerPrices[s.symbol] *= (1 + (Math.random() * 0.006 - 0.003));
+      });
+      buildTicker();
+    }, 3000);
+  }
+}
+
+function buildTicker() {
+  const items = STOCKS.map(s => {
+    const p = tickerPrices[s.symbol];
+    const diff = p - s.price;
+    const pct = (diff / s.price * 100).toFixed(2);
+    const cls = diff >= 0 ? 'up' : 'down';
+    const arrow = diff >= 0 ? '▲' : '▼';
+    return `<span class="ticker-item">
+      <span class="ticker-symbol">${s.symbol}</span>
+      <span class="ticker-price">${formatPrice(p)}</span>
+      <span class="${cls}">${arrow} ${Math.abs(pct)}%</span>
+    </span>`;
+  }).join('');
+  // Duplicate for seamless scroll
+  const el = document.getElementById('ticker');
+  if (el) el.innerHTML = items + items;
+}
+
+function buildStatsGrid() {
+  const grid = document.getElementById('statsGrid');
+  if (!grid) return;
+  const stats = [
+    { label:'Market Cap (VN)', val:'600T VND', icon:'🇻🇳', color:'--accent-blue' },
+    { label:'Daily Volume',    val:'125M shares', icon:'📊', color:'--accent-green' },
+    { label:'Active Traders',  val:'8.4M',    icon:'👥', color:'--accent-purple' },
+    { label:'Avg P/E Ratio',   val:'16.2×',   icon:'📈', color:'--accent-cyan' },
+    { label:'Market Cap (US)', val:'$5.82T',  icon:'🇺🇸', color:'--accent-blue' },
+    { label:'VN-Index',        val:'1,287',   icon:'🏦', color:'--accent-green' },
+  ];
+  grid.innerHTML = stats.map(s => `
+    <div class="card" style="text-align:center">
+      <div style="font-size:2rem;margin-bottom:0.5rem">${s.icon}</div>
+      <div style="font-size:1.5rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(${s.color})">${s.val}</div>
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem;text-transform:uppercase;letter-spacing:0.06em">${s.label}</div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// STOCK SEARCH
+// ══════════════════════════════════════════════════════════════════════
+let stockPrices = {};
+let detailChartInst = null;
+let miniChartInsts = {};
+let selectedStock = null;
+
+function initStocks() {
+  STOCKS.forEach(s => {
+    if (!stockPrices[s.symbol]) stockPrices[s.symbol] = randomWalk(s.base, 90);
+  });
+  renderStockGrid(STOCKS);
+}
+
+function filterStocks() {
+  const q = document.getElementById('stockSearch').value.toLowerCase();
+  const filtered = STOCKS.filter(s =>
+    s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
+  );
+  renderStockGrid(filtered);
+}
+
+function renderStockGrid(stocks) {
+  const grid = document.getElementById('stockGrid');
+  grid.innerHTML = stocks.map(s => {
+    const prices = stockPrices[s.symbol] || [];
+    const cur = prices[prices.length - 1] || s.price;
+    const diff = cur - s.base;
+    const pct = (diff / s.base * 100);
+    const cls = pct >= 0 ? 'up' : 'down';
+    const arrow = pct >= 0 ? '▲' : '▼';
+    return `
+    <div class="stock-card ${selectedStock === s.symbol ? 'selected' : ''}" onclick="selectStock('${s.symbol}')" id="scard-${s.symbol}">
+      <div class="stock-header">
+        <div>
+          <div class="stock-symbol">${s.symbol}</div>
+          <div class="stock-name">${s.name}</div>
+        </div>
+        <span class="stock-change ${cls}">${arrow} ${Math.abs(pct).toFixed(2)}%</span>
+      </div>
+      <div class="stock-price">${formatPrice(cur)}</div>
+      <div class="stock-meta">
+        <div class="stock-meta-item"><label>Volume</label><span>${s.volume}</span></div>
+        <div class="stock-meta-item"><label>Mkt Cap</label><span>${s.mcap}</span></div>
+        <div class="stock-meta-item"><label>Market</label><span>${s.market}</span></div>
+        <div class="stock-meta-item"><label>Sector</label><span>${s.sector}</span></div>
+      </div>
+      <div class="mini-chart"><canvas id="mini-${s.symbol}" height="50"></canvas></div>
+    </div>`;
+  }).join('');
+
+  // Build mini charts
+  stocks.forEach(s => {
+    setTimeout(() => {
+      const canvas = document.getElementById('mini-' + s.symbol);
+      if (!canvas) return;
+      if (miniChartInsts[s.symbol]) miniChartInsts[s.symbol].destroy();
+      const prices = stockPrices[s.symbol] || [];
+      const last20 = prices.slice(-20);
+      const trend = last20[last20.length-1] >= last20[0];
+      const color = trend ? '#10b981' : '#ef4444';
+      miniChartInsts[s.symbol] = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: last20.map((_,i) => i),
+          datasets: [{ data: last20, borderColor: color, borderWidth: 2, pointRadius: 0, tension: 0.4,
+            fill: true, backgroundColor: trend ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)' }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{enabled:false}},
+          scales:{x:{display:false},y:{display:false}}, animation:{duration:500} }
+      });
+    }, 50);
+  });
+}
+
+function selectStock(symbol) {
+  selectedStock = symbol;
+  document.querySelectorAll('.stock-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('scard-' + symbol);
+  if (card) card.classList.add('selected');
+
+  const s = STOCKS.find(x => x.symbol === symbol);
+  const prices = stockPrices[symbol];
+  const panel = document.getElementById('detailPanel');
+  panel.classList.add('show');
+
+  const cur = prices[prices.length - 1];
+  const diff = cur - s.base;
+  const pct = (diff / s.base * 100);
+  const cls = pct >= 0 ? 'up' : 'down';
+
+  document.getElementById('detailTitle').textContent = `${s.symbol} — ${s.name}`;
+  document.getElementById('detailMeta').textContent = `${s.market} · ${s.sector}`;
+  document.getElementById('detailPrice').textContent = formatPrice(cur);
+  document.getElementById('detailChange').innerHTML = `<span class="stock-change ${cls}" style="font-size:0.95rem">${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(2)}%</span>`;
+
+  panel.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  if (detailChartInst) detailChartInst.destroy();
+  const canvas = document.getElementById('detailChart');
+  const labels = Array.from({length:prices.length}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate() - (prices.length - i));
+    return d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  });
+  const grad = canvas.getContext('2d').createLinearGradient(0, 0, 0, 300);
+  const color = pct >= 0 ? '#10b981' : '#ef4444';
+  grad.addColorStop(0, pct >= 0 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+  detailChartInst = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: s.symbol, data: prices, borderColor: color, borderWidth: 2,
+        pointRadius: 0, tension: 0.4, fill: true, backgroundColor: grad
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ` ${formatPrice(ctx.raw)}` } } },
+      scales: {
+        x: { ticks:{ color:'#8ba3c7', maxTicksLimit:10, font:{size:11} }, grid:{color:'rgba(255,255,255,0.04)'} },
+        y: { ticks:{ color:'#8ba3c7', font:{size:11}, callback: v => formatPrice(v) }, grid:{color:'rgba(255,255,255,0.04)'} }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// SIMULATOR
+// ══════════════════════════════════════════════════════════════════════
+let simValues = {};
+let sdChartInstance = null;
+let trendChartInstance = null;
+let riskChartInstance = null;
+let priceHistory = [];
+
+function initSimulator() {
+  SLIDER_CONFIG.forEach(s => { simValues[s.id] = s.def; });
+  buildSliders();
+  buildEquilDisplay();
+  buildSDChart();
+  buildTrendChart();
+  buildRiskChart();
+  updateSimExplain();
+}
+
+function buildSliders() {
+  const container = document.getElementById('sliders');
+  container.innerHTML = SLIDER_CONFIG.map(s => {
+    const pct = ((simValues[s.id] - s.min) / (s.max - s.min) * 100).toFixed(1);
+    return `
+    <div class="slider-group">
+      <div class="slider-label">
+        <span class="slider-name">${s.label}</span>
+        <span class="slider-val" id="val-${s.id}">${simValues[s.id]}${s.unit}</span>
+      </div>
+      <input type="range" min="${s.min}" max="${s.max}" value="${simValues[s.id]}"
+        id="slider-${s.id}"
+        style="--pct:${pct}%"
+        oninput="onSliderChange('${s.id}', this.value, ${s.min}, ${s.max}, '${s.unit}')" />
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">${s.desc}</div>
+    </div>`;
+  }).join('');
+}
+
+function onSliderChange(id, val, min, max, unit) {
+  simValues[id] = parseFloat(val);
+  document.getElementById('val-' + id).textContent = val + unit;
+  const pct = ((val - min) / (max - min) * 100).toFixed(1);
+  document.getElementById('slider-' + id).style.setProperty('--pct', pct + '%');
+  updateSimulator();
+}
+
+function calcEquilibrium() {
+  const v = simValues;
+  const demandFactor = (v.demand - 50) / 50;      // -1 to +1
+  const supplyFactor = (v.supply - 50) / 50;       // -1 to +1
+  const intFactor    = (v.interest - 5) / 20;      // normalized
+  const inflFactor   = (v.inflation - 3) / 25;     // normalized
+  const taxFactor    = (v.tax - 20) / 50;          // normalized
+  const prodFactor   = (v.prodcost - 30) / 100;    // normalized
+  const confFactor   = (v.confidence - 60) / 100;  // normalized
+  const sentFactor   = (v.sentiment - 55) / 100;   // normalized
+
+  const basePrice = 100;
+  const price = basePrice
+    * (1 + demandFactor * 0.4)
+    / (1 + supplyFactor * 0.3)
+    * (1 - intFactor * 0.35)
+    * (1 - inflFactor * 0.2)
+    * (1 - taxFactor * 0.25)
+    * (1 - prodFactor * 0.15)
+    * (1 + confFactor * 0.3)
+    * (1 + sentFactor * 0.25);
+
+  const qty = 50 + demandFactor * 20 - supplyFactor * 15 - taxFactor * 5;
+
+  const risk = Math.min(100, Math.max(0,
+    50
+    + Math.abs(intFactor) * 25
+    + Math.abs(inflFactor) * 20
+    - confFactor * 15
+    - sentFactor * 10
+  ));
+
+  return { price: Math.max(20, price), qty: Math.max(5, qty), risk };
+}
+
+function buildEquilDisplay() {
+  const { price, qty, risk } = calcEquilibrium();
+  const priceChange = price - 100;
+  const pcls = priceChange >= 0 ? 'positive' : 'negative';
+  document.getElementById('equilDisplay').innerHTML = `
+    <div class="equil-item ${pcls}">
+      <label>Equilibrium Price</label>
+      <div class="val">$${price.toFixed(2)}</div>
+    </div>
+    <div class="equil-item neutral">
+      <label>Equilibrium Qty</label>
+      <div class="val">${qty.toFixed(1)}M</div>
+    </div>
+    <div class="equil-item ${risk > 60 ? 'negative' : risk > 40 ? 'neutral' : 'positive'}">
+      <label>Risk Index</label>
+      <div class="val">${risk.toFixed(0)}</div>
+    </div>`;
+}
+
+function buildSDChart() {
+  const canvas = document.getElementById('sdChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const { price } = calcEquilibrium();
+  const v = simValues;
+  const supplyBase = (v.supply - 50) / 50;
+  const demandBase = (v.demand - 50) / 50;
+  const intAdj = (v.interest - 5) / 20 * 0.3;
+  const confAdj = (v.confidence - 60) / 100 * 0.25;
+
+  const prices = Array.from({length:21}, (_,i) => i * 10);
+
+  // Demand: Qd = (80 + demandAdj * 30 + confAdj * 20) - b*P
+  const demandSlope = 0.4 - intAdj * 0.1;
+  const demandIntercept = 80 + demandBase * 30 + confAdj * 20 - intAdj * 15;
+  const demandQty = prices.map(p => Math.max(0, demandIntercept - demandSlope * p));
+
+  // Supply: Qs = supplyAdj + d*P
+  const supplySlope = 0.3;
+  const supplyIntercept = 10 + supplyBase * 20 - (v.prodcost - 30) / 100 * 15 - (v.tax - 20) / 50 * 10;
+  const supplyQty = prices.map(p => Math.max(0, supplyIntercept + supplySlope * p));
+
+  const textColor = isDark ? '#8ba3c7' : '#475569';
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+
+  sdChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: prices,
+      datasets: [
+        {
+          label: 'Demand (Qd)',
+          data: demandQty,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.08)',
+          borderWidth: 2.5, pointRadius: 0, tension: 0.1, fill: false
+        },
+        {
+          label: 'Supply (Qs)',
+          data: supplyQty,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.08)',
+          borderWidth: 2.5, pointRadius: 0, tension: 0.1, fill: false
+        },
+        {
+          label: 'Equilibrium',
+          data: prices.map(p => p === Math.round(price / 10) * 10 ? null : null),
+          pointBackgroundColor: '#f59e0b',
+          pointRadius: 10, type: 'scatter',
+          data: [{ x: price, y: demandIntercept - demandSlope * price }]
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { color: textColor, boxWidth: 14, font:{size:12} } },
+        tooltip: { mode: 'index' }
+      },
+      scales: {
+        x: { title:{display:true, text:'Price (P)', color:textColor}, ticks:{color:textColor, font:{size:11}}, grid:{color:gridColor} },
+        y: { title:{display:true, text:'Quantity (Q)', color:textColor}, ticks:{color:textColor, font:{size:11}}, grid:{color:gridColor} }
+      },
+      animation: { duration: 600, easing: 'easeInOutQuart' }
+    }
+  });
+}
+
+function buildTrendChart() {
+  const canvas = document.getElementById('trendChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const { price } = calcEquilibrium();
+  priceHistory.push(price);
+  if (priceHistory.length > 20) priceHistory.shift();
+  const hist = priceHistory.length < 2 ? [100, price] : priceHistory;
+  const trend = hist[hist.length-1] >= hist[0];
+  const color = trend ? '#10b981' : '#ef4444';
+  const textColor = isDark ? '#8ba3c7' : '#475569';
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+  const grad = canvas.getContext('2d').createLinearGradient(0, 0, 0, 220);
+  grad.addColorStop(0, trend ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+  trendChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: hist.map((_,i) => `T-${hist.length - i}`),
+      datasets: [{ label:'Eq. Price', data: hist, borderColor: color, backgroundColor: grad,
+        borderWidth:2.5, pointRadius:3, pointBackgroundColor:color, tension:0.4, fill:true }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false} },
+      scales: {
+        x:{ticks:{color:textColor,font:{size:11}},grid:{color:gridColor}},
+        y:{ticks:{color:textColor,font:{size:11},callback:v=>v.toFixed(1)},grid:{color:gridColor}}
+      },
+      animation:{ duration:400 }
+    }
+  });
+}
+
+function buildRiskChart() {
+  const canvas = document.getElementById('riskChart');
+  if (!canvas) return;
+  const { risk } = calcEquilibrium();
+  const ctx = canvas.getContext('2d');
+  const riskColor = risk > 65 ? '#ef4444' : risk > 40 ? '#f59e0b' : '#10b981';
+  riskChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [risk, 100 - risk],
+        backgroundColor: [riskColor, isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'],
+        borderWidth: 0, circumference: 270, rotation: -135
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '70%',
+      plugins: {
+        legend:{display:false},
+        tooltip:{enabled:false},
+      },
+      animation:{duration:600}
+    },
+    plugins: [{
+      id:'riskLabel',
+      afterDraw(chart) {
+        const {ctx, width, height} = chart;
+        ctx.save();
+        ctx.font = `800 ${Math.min(width,height) * 0.2}px Inter`;
+        ctx.fillStyle = riskColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(risk.toFixed(0), width/2, height/2 - 5);
+        ctx.font = `500 ${Math.min(width,height) * 0.08}px Inter`;
+        ctx.fillStyle = isDark ? '#8ba3c7' : '#475569';
+        ctx.fillText(risk > 65 ? 'HIGH RISK' : risk > 40 ? 'MODERATE' : 'LOW RISK', width/2, height/2 + height*0.1);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+function updateSimulator() {
+  buildEquilDisplay();
+  if (sdChartInstance) { sdChartInstance.destroy(); buildSDChart(); }
+  if (trendChartInstance) { trendChartInstance.destroy(); buildTrendChart(); }
+  if (riskChartInstance) { riskChartInstance.destroy(); buildRiskChart(); }
+  updateSimExplain();
+}
+
+function updateSimExplain() {
+  const v = simValues;
+  const { price, risk } = calcEquilibrium();
+  const dir = price >= 100 ? 'upward' : 'downward';
+  const factors = [];
+  if (v.demand > 60) factors.push('strong consumer demand');
+  if (v.demand < 40) factors.push('weak consumer demand');
+  if (v.supply > 65) factors.push('excess market supply');
+  if (v.supply < 35) factors.push('supply constraints');
+  if (v.interest > 8) factors.push('high interest rates reducing equity demand');
+  if (v.interest < 3) factors.push('low interest rates boosting equity attractiveness');
+  if (v.inflation > 8) factors.push('elevated inflation eroding real returns');
+  if (v.confidence > 70) factors.push('high consumer confidence');
+  if (v.confidence < 40) factors.push('low consumer confidence');
+  if (v.sentiment > 70) factors.push('strong investor sentiment');
+  if (v.sentiment < 35) factors.push('negative investor sentiment');
+  if (v.tax > 30) factors.push('heavy corporate tax burden');
+  if (v.prodcost > 60) factors.push('elevated production costs shifting supply left');
+
+  const factorText = factors.length > 0 ? factors.join(', ') : 'balanced economic conditions';
+  document.getElementById('simExplain').innerHTML = `
+    <strong>Current Market Analysis:</strong><br><br>
+    The equilibrium price has moved <strong>${dir}</strong> to <strong>$${price.toFixed(2)}</strong> driven by ${factorText}.<br><br>
+    <strong>Supply & Demand Dynamics:</strong> The demand curve is positioned at ${v.demand > 50 ? 'an elevated' : 'a suppressed'} level while supply is ${v.supply > 50 ? 'high' : 'constrained'}. According to the Law of ${price >= 100 ? 'Demand (rightward shift)' : 'Demand (leftward shift)'}, this puts ${price >= 100 ? 'upward' : 'downward'} pressure on equilibrium price.<br><br>
+    <strong>Risk Assessment:</strong> Current market risk index is <strong>${risk.toFixed(0)}/100</strong> — ${risk > 65 ? '<span style="color:var(--accent-red)">HIGH RISK: Significant uncertainty, wide price dispersion expected</span>' : risk > 40 ? '<span style="color:var(--accent-orange)">MODERATE RISK: Typical market volatility</span>' : '<span style="color:var(--accent-green)">LOW RISK: Stable conditions with narrow price range</span>'}.<br><br>
+    <em style="color:var(--text-muted);font-size:0.8rem">⚠️ This is an educational economic simulation, not financial advice.</em>
+  `;
+}
+
+function resetSimulator() {
+  SLIDER_CONFIG.forEach(s => {
+    simValues[s.id] = s.def;
+    const slider = document.getElementById('slider-' + s.id);
+    const valEl = document.getElementById('val-' + s.id);
+    if (slider) { slider.value = s.def; const pct = ((s.def - s.min) / (s.max - s.min) * 100).toFixed(1); slider.style.setProperty('--pct', pct + '%'); }
+    if (valEl) valEl.textContent = s.def + s.unit;
+  });
+  priceHistory = [];
+  updateSimulator();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// POLICY ANALYSIS
+// ══════════════════════════════════════════════════════════════════════
+let policyChartInst = null;
+let activePolicyId = null;
+
+function initPolicy() {
+  const grid = document.getElementById('policyGrid');
+  grid.innerHTML = POLICIES.map(p => `
+    <button class="policy-card ${activePolicyId === p.id ? 'active' : ''}" onclick="selectPolicy('${p.id}')" id="pcrd-${p.id}">
+      <span class="policy-icon">${p.icon}</span>
+      <div class="policy-name">${p.name}</div>
+      <div class="policy-desc">${p.desc}</div>
+    </button>`).join('');
+  if (activePolicyId) selectPolicy(activePolicyId);
+}
+
+function selectPolicy(id) {
+  activePolicyId = id;
+  document.querySelectorAll('.policy-card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById('pcrd-' + id);
+  if (card) card.classList.add('active');
+
+  const pol = POLICIES.find(p => p.id === id);
+  const panel = document.getElementById('impactPanel');
+  panel.classList.remove('show');
+  setTimeout(() => panel.classList.add('show'), 10);
+
+  document.getElementById('policyPanelIcon').textContent = pol.icon;
+  document.getElementById('policyPanelTitle').textContent = pol.name;
+  document.getElementById('policyPanelDesc').textContent = pol.narrative;
+
+  const dirMap = { up: `<span class="impact-badge up">▲ Increases</span>`, down: `<span class="impact-badge down">▼ Decreases</span>`, neutral: `<span class="impact-badge neutral">↔ Mixed</span>` };
+  document.getElementById('impactTable').innerHTML = pol.impacts.map(imp => `
+    <tr>
+      <td style="font-weight:600">${imp.dim}</td>
+      <td>${dirMap[imp.dir]}</td>
+      <td style="color:var(--text-secondary)">${imp.exp}</td>
+    </tr>`).join('');
+
+  if (policyChartInst) policyChartInst.destroy();
+  const canvas = document.getElementById('policyChart');
+  const textColor = isDark ? '#8ba3c7' : '#475569';
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+  const data = pol.chartData;
+  const colors = data.map(v => v >= 0 ? 'rgba(16,185,129,0.75)' : 'rgba(239,68,68,0.75)');
+  const borders = data.map(v => v >= 0 ? '#10b981' : '#ef4444');
+  policyChartInst = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: ['Day 1','Day 2','Day 3','Day 4','Day 5','Day 6','Day 7'],
+      datasets: [{ label:'Price Impact (%)', data, backgroundColor:colors, borderColor:borders, borderWidth:1.5, borderRadius:6 }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:textColor}}, tooltip:{callbacks:{label:ctx=>` ${ctx.raw > 0 ? '+' : ''}${ctx.raw}%`}} },
+      scales:{
+        x:{ticks:{color:textColor},grid:{color:gridColor}},
+        y:{ticks:{color:textColor,callback:v=>`${v > 0 ? '+' : ''}${v}%`},grid:{color:gridColor},
+          plugins:{annotation:{annotations:{zero:{type:'line',y:0,borderColor:'rgba(255,255,255,0.2)',borderWidth:1}}}}}
+      }
+    }
+  });
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// AI EXPLAINER
+// ══════════════════════════════════════════════════════════════════════
+function initExplainer() {
+  const chips = document.getElementById('scenarioChips');
+  if (chips && chips.children.length === 0) {
+    chips.innerHTML = SCENARIOS.map(s => `
+      <button class="chip" onclick="useScenario(this, '${s.replace(/'/g, "\\'")}')">
+        ${s.length > 50 ? s.slice(0,50) + '…' : s}
+      </button>`).join('');
+  }
+}
+
+function useScenario(el, text) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('explainerInput').value = text;
+  generateExplanation();
+}
+
+function generateExplanation() {
+  const input = document.getElementById('explainerInput').value.toLowerCase();
+  const output = document.getElementById('explanationOutput');
+  output.classList.remove('show');
+
+  let kb = EXPLAINER_KB.default;
+  if (input.includes('interest') || input.includes('rate') || input.includes('fed') || input.includes('central bank')) kb = EXPLAINER_KB['interest rate'];
+  else if (input.includes('inflation') || input.includes('cpi') || input.includes('price level')) kb = EXPLAINER_KB['inflation'];
+  else if (input.includes('gdp') || input.includes('growth') || input.includes('economic growth')) kb = EXPLAINER_KB['gdp'];
+  else if (input.includes('tax') || input.includes('corporate')) kb = EXPLAINER_KB['corporate tax'];
+  else if (input.includes('confidence') || input.includes('consumer')) kb = EXPLAINER_KB['consumer confidence'];
+  else if (input.includes('equilibrium') || input.includes('supply') || input.includes('demand')) kb = EXPLAINER_KB['market equilibrium'];
+
+  setTimeout(() => {
+    output.innerHTML = `
+      <h3>📊 ${kb.title}</h3>
+      ${kb.paragraphs.map(p => `<p>${p}</p>`).join('')}
+      <div class="formula">${kb.formula}</div>
+      <p><strong>📌 Real Market Example:</strong><br>${kb.example}</p>
+      <div class="disclaimer" style="margin-top:1rem">
+        ⚠️ <strong>This is an educational economic simulation, not financial advice.</strong> No buy, sell, or hold recommendations are implied.
+      </div>`;
+    output.classList.add('show');
+  }, 300);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// LEARNING
+// ══════════════════════════════════════════════════════════════════════
+let theoryChartInsts = {};
+
+function initLearning() {
+  const grid = document.getElementById('theoryGrid');
+  if (grid && grid.children.length === 0) {
+    grid.innerHTML = THEORIES.map((t, i) => `
+      <div class="theory-card" id="tc-${i}">
+        <div class="theory-header" onclick="toggleTheory(${i})">
+          <div class="theory-header-left">
+            <span class="theory-tag" style="background:${t.color}22;color:${t.color}">${t.tag}</span>
+            <span style="font-weight:700;font-size:0.95rem">${t.name}</span>
+          </div>
+          <span class="chevron" id="chev-${i}">▼</span>
+        </div>
+        <div class="theory-body" id="tbody-${i}">
+          <p class="theory-def">${t.def}</p>
+          <div class="theory-formula">${t.formula}</div>
+          <div class="mini-chart-wrap"><canvas id="tchart-${i}" height="100"></canvas></div>
+          <div class="theory-example">📌 ${t.example}</div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function toggleTheory(i) {
+  const body = document.getElementById('tbody-' + i);
+  const chev = document.getElementById('chev-' + i);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+  if (!isOpen) {
+    setTimeout(() => buildTheoryChart(i), 50);
+  }
+}
+
+function buildTheoryChart(i) {
+  const t = THEORIES[i];
+  const canvas = document.getElementById('tchart-' + i);
+  if (!canvas) return;
+  if (theoryChartInsts[i]) theoryChartInsts[i].destroy();
+
+  const textColor = isDark ? '#8ba3c7' : '#475569';
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+  const prices = [10,20,30,40,50,60,70,80,90,100];
+  let datasets = [];
+
+  switch(t.chartType) {
+    case 'demand':
+      datasets = [{label:'Demand', data:prices.map(p => 100 - p*0.8), borderColor:'#3b82f6', pointRadius:0, tension:0.3, fill:true, backgroundColor:'rgba(59,130,246,0.08)'}];
+      break;
+    case 'supply':
+      datasets = [{label:'Supply', data:prices.map(p => 10 + p*0.7), borderColor:'#10b981', pointRadius:0, tension:0.3, fill:true, backgroundColor:'rgba(16,185,129,0.08)'}];
+      break;
+    case 'equilibrium':
+      datasets = [
+        {label:'Demand', data:prices.map(p => 100-p*0.8), borderColor:'#3b82f6', pointRadius:0, tension:0.3, fill:false},
+        {label:'Supply', data:prices.map(p => 10+p*0.7), borderColor:'#10b981', pointRadius:0, tension:0.3, fill:false},
+      ];
+      break;
+    case 'elasticity':
+      datasets = [
+        {label:'Elastic', data:prices.map(p => 100 - p*1.5), borderColor:'#3b82f6', pointRadius:0, tension:0.3, fill:false},
+        {label:'Inelastic', data:prices.map(p => 70 - p*0.3), borderColor:'#f59e0b', pointRadius:0, tension:0.3, fill:false},
+      ];
+      break;
+    case 'cs':
+      datasets = [{label:'Demand', data:prices.map(p => 100-p*0.8), borderColor:'#06b6d4', pointRadius:0, tension:0.3, fill:true, backgroundColor:'rgba(6,182,212,0.15)'}];
+      break;
+    case 'ps':
+      datasets = [{label:'Supply', data:prices.map(p => 10+p*0.7), borderColor:'#10b981', pointRadius:0, tension:0.3, fill:true, backgroundColor:'rgba(16,185,129,0.15)'}];
+      break;
+    case 'dwl':
+      datasets = [
+        {label:'Demand', data:prices.map(p => 100-p*0.8), borderColor:'#3b82f6', pointRadius:0, tension:0.3, fill:false},
+        {label:'Supply+Tax', data:prices.map(p => 25+p*0.7), borderColor:'#ef4444', pointRadius:0, tension:0.3, fill:false},
+        {label:'Supply', data:prices.map(p => 10+p*0.7), borderColor:'#10b981', pointRadius:0, tension:0.3, fill:false, borderDash:[4,4]},
+      ];
+      break;
+    case 'oc':
+      datasets = [
+        {label:'Stock Return', data:[2,4,8,14,22,18,24,28,21,30], borderColor:'#10b981', pointRadius:2, tension:0.4, fill:false},
+        {label:'Next Best (Bonds)', data:[3,3.5,4,4.5,5,5,5.5,6,6,6.5], borderColor:'#8b5cf6', pointRadius:2, tension:0.3, fill:false, borderDash:[4,4]},
+      ];
+      break;
+  }
+
+  theoryChartInsts[i] = new Chart(canvas, {
+    type:'line',
+    data:{ labels: t.chartType === 'oc' ? Array.from({length:10},(_,i)=>`Q${i+1}`) : prices, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:textColor,boxWidth:12,font:{size:11}}, display:datasets.length > 1} },
+      scales:{
+        x:{ticks:{color:textColor,font:{size:10}},grid:{color:gridColor}},
+        y:{ticks:{color:textColor,font:{size:10}},grid:{color:gridColor}}
+      },
+      animation:{duration:800, easing:'easeInOutQuart'}
+    }
+  });
+}
+
+function rebuildTheoryCharts() {
+  Object.keys(theoryChartInsts).forEach(i => {
+    if (document.getElementById('tbody-' + i)?.classList.contains('open')) {
+      buildTheoryChart(parseInt(i));
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initHome();
+  buildStatsGrid();
+});
+</script>
+</body>
+</html>
